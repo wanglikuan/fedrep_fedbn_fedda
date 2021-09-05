@@ -1,0 +1,44 @@
+##!/bin/sh
+#PBS -N peravg_dnn
+#PBS -l nodes=1:ppn=1 -W x=GRES:gpu@1
+#PBS -l walltime=36:00:00
+#PBS -q qgpu01
+#PBS -V
+#PBS -S /bin/bash
+
+module load anaconda3-5.2.0
+module load cuda-9.0
+module load openmpi-3.0.1-gcc-5.5.0
+#source activate py_gpu2
+#conda install pandas
+#################################################################
+NP=`cat $PBS_NODEFILE | wc -l`
+NN=`cat $PBS_NODEFILE | sort | uniq | tee /tmp/nodes.$$ | wc -l`
+cat $PBS_NODEFILE > /tmp/nodefile.$$
+echo "process will start at : "
+date
+echo "++++++++++++++++++++++++++++++++++++++++"
+cd $PBS_O_WORKDIR
+
+nvidia-smi > nv.out
+
+#cifar10
+mpirun -n $NP python main.py --dataset=Cifar10 --model=cnn --batch_size=16 --learning_rate=0.01 --num_global_iters=400 --local_epochs=20 --algorithm=FedDA --numusers=20  --times=1 --gpu=0 > cifar10_fedda_test.out
+
+#mpirun -n $NP python main.py --dataset=Cifar10 --model=cnn --batch_size=16 --learning_rate=0.01 --num_global_iters=500 --local_epochs=20 --algorithm=FedAvg --numusers=10  --times=1 --gpu=0 > cifar10_ours_softmax5_penalty0.1_test1.out
+
+#emnist
+#mpirun -n $NP python main.py --dataset=EMnist --model=cnn --batch_size=16 --learning_rate=0.01 --num_global_iters=500 --local_epochs=20 --algorithm=FedAvg --numusers=10  --times=1 --gpu=0 > EMnist_aaai-cos_test1.out
+
+#mpirun -n $NP python main.py --dataset=EMnist --model=cnn --batch_size=16 --learning_rate=0.01 --num_global_iters=500 --local_epochs=20 --algorithm=FedAvg --numusers=10  --times=1 --gpu=0 > EMnist_ours_softmax5_penalty0.1_test1.out
+
+
+
+echo "++++++++++++++++++++++++++++++++++++++++"
+echo "process end at : "
+date
+rm -f /tmp/nodefile.$$
+rm -f /tmp/nodes.$$
+
+module unload openmpi-3.0.1-gcc-5.5.0
+module unload cuda-9.0
